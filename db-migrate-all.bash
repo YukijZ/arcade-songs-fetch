@@ -1,5 +1,4 @@
-#!/usr/bin/bash
-
+#!/usr/bin/env bash
 for path in db/*; do
   gamecode=$(basename "$path")
 

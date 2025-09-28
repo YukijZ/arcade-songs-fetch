@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>maimai Chart Viewer</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="title">🎵 maimai Charts</h1>
+        </header>
+
+        <!-- Random Song Picker -->
+        <section class="random-section">
+            <div class="random-header">
+                <h2>Random charts</h2>
+                <button id="randomBtn" class="random-btn">Random</button>
+            </div>
+            <div id="randomSongs" class="random-songs-grid"></div>
+        </section>
+
+        <!-- Search Section -->
+        <section class="search-section">
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="Search songs by title or artist..."
+                    class="search-input">
+                <button id="searchBtn" class="search-btn">Search</button>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section class="results-section">
+            <div class="results-header">
+                <h2 id="resultsTitle">Random Songs</h2>
+                <div class="results-count">
+                    <span id="resultsCount">0</span> songs found
+                </div>
+            </div>
+            <div id="songsList" class="songs-list"></div>
+        </section>
+
+        <!-- Loading Spinner -->
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <!-- Song Detail Modal -->
+    <div id="songModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modalContent">
+                <img id="chartTypeImg" alt="Chart Type">
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

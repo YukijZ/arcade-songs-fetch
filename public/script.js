@@ -95,9 +95,23 @@ async function searchSongs(query) {
 // Load random songs
 async function loadRandomSongs() {
   allSongs = await fetchSongs();
+
+  allSongs.sort((a, b) => {
+    const dateA = new Date(a.releaseDate);
+    const dateB = new Date(b.releaseDate);
+
+    if (dateA < dateB) {
+      return 1;
+    }
+    if (dateA > dateB) {
+      return -1;
+    }
+    return 0;
+  });
+
   currentSongs = allSongs;
   displaySongs(currentSongs);
-  updateResultsInfo('Random Songs', allSongs.length);
+  updateResultsInfo('Songs', allSongs.length);
 }
 
 // Handle search
@@ -163,9 +177,9 @@ function createSongCard(song) {
   const chartBadges = charts
     .map(
       (chart) =>
-        `<span class="chart-badge ${chart.difficulty?.toUpperCase()}">${
-          chart.difficulty
-        } ${chart.level}</span>`
+        `<span class="chart-badge ${chart.difficulty?.toUpperCase()}">${chart.difficulty?.toUpperCase()} ${
+          chart.level
+        }</span>`
     )
     .join('');
 
@@ -197,9 +211,9 @@ function createRandomSongCard(song) {
   const chartBadges = charts
     .map(
       (chart) =>
-        `<span class="chart-badge ${chart.difficulty?.toLowerCase()}">${
-          chart.difficulty
-        } ${chart.level}</span>`
+        `<span class="chart-badge ${chart.difficulty?.toLowerCase()}">${chart.difficulty?.toUpperCase()} ${
+          chart.level
+        }</span>`
     )
     .join('');
 
@@ -228,7 +242,6 @@ function getChartTypeImage(type) {
 function showSongDetail(song) {
   const charts = song.charts || [];
 
-  // Group charts by difficulty
   const chartsByDifficulty = charts.reduce((acc, chart) => {
     if (!acc[chart.difficulty]) {
       acc[chart.difficulty] = [];
@@ -246,7 +259,7 @@ function showSongDetail(song) {
                     <img src="${getChartTypeImage(chart.type)}" alt="${
             chart.type
           }" class="chart-type-img">
-                    <span class="chart-difficulty">${chart.difficulty} ${
+                    <span class="chart-difficulty">${chart.difficulty.toUpperCase()} ${
             chart.level
           }</span>
                 </div>
@@ -256,7 +269,7 @@ function showSongDetail(song) {
 
       return `
                 <div class="difficulty-group">
-                    <h4 class="difficulty-title ${difficulty.toLowerCase()}">${difficulty}</h4>
+                    <h4 class="difficulty-title ${difficulty.toLowerCase()}">${difficulty.toUpperCase()}</h4>
                     ${chartsList}
                 </div>
             `;
@@ -321,7 +334,6 @@ function hideLoading() {
 }
 
 function showError(message) {
-  // Simple error display - you could enhance this with a proper toast notification
   alert(message);
 }
 
@@ -335,7 +347,7 @@ function escapeHtml(text) {
 const chart = { type: 'DX' };
 const imgSrc = getChartTypeImage(chart.type);
 document.getElementById('chartTypeImg').src = imgSrc;
-// Add some additional CSS for modal content
+
 const additionalStyles = `
     .song-detail {
         color: #2d3748;
@@ -403,7 +415,6 @@ const additionalStyles = `
         background: #f7fafc;
         padding: 10px 15px;
         margin: 5px 0;
-        border-radius: 8px;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -423,7 +434,6 @@ const additionalStyles = `
         width: 120px;
         height: 120px;
         object-fit: cover;
-        border-radius: 12px;
         margin-bottom: 15px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
@@ -440,9 +450,21 @@ const additionalStyles = `
         font-size: 1.1rem;
         padding: 40px;
     }
+        .chart-badge.BASIC{ background-color: #1c6040ff;color :white; }
+        .chart-badge.ADVANCED{ background-color: #d5ac27ff;color :white; }
+        .chart-badge.EXPERT{ background-color: #b30b0bff;color :white; }
+        .chart-badge.MASTER{ background-color: #6d1370ff;color :white; }
+        .chart-badge.REMASTER{ background-color: #db21b0ff;color :white;
+        }
+        .modal-content {
+  border-radius: 0;
+}
+.modal-category{
+  border-radius: 10px;}
+.chart-badge {
+  border-radius: 0; 
+}
 `;
-
-// Inject additional styles
 const styleSheet = document.createElement('style');
 styleSheet.textContent = additionalStyles;
 document.head.appendChild(styleSheet);

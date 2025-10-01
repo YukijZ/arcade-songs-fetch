@@ -91,29 +91,6 @@ async function searchSongs(query) {
     return [];
   }
 }
-
-// Load random songs
-async function loadRandomSongs() {
-  allSongs = await fetchSongs();
-
-  allSongs.sort((a, b) => {
-    const dateA = new Date(a.releaseDate);
-    const dateB = new Date(b.releaseDate);
-
-    if (dateA < dateB) {
-      return 1;
-    }
-    if (dateA > dateB) {
-      return -1;
-    }
-    return 0;
-  });
-
-  currentSongs = allSongs;
-  displaySongs(currentSongs);
-  updateResultsInfo('Songs', allSongs.length);
-}
-
 // Handle search
 async function handleSearch() {
   const query = searchInput.value.trim();

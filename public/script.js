@@ -1,3 +1,7 @@
+/* eslint-disable operator-linebreak */
+/* eslint-disable object-shorthand */
+/* eslint-disable no-return-await */
+/* eslint-disable consistent-return */
 /* eslint-disable function-paren-newline */
 /* eslint-disable comma-dangle */
 /* eslint-disable @typescript-eslint/no-shadow */
@@ -9,7 +13,6 @@
 /* eslint-disable no-use-before-define */
 /* eslint-disable indent */
 // Global variables
-let allSongs = [];
 let currentSongs = [];
 
 // DOM elements
@@ -23,12 +26,12 @@ const resultsCount = document.getElementById('resultsCount');
 const loading = document.getElementById('loading');
 const songModal = document.getElementById('songModal');
 const modalContent = document.getElementById('modalContent');
-const closeModal = document.querySelector('.close');
-
+let currentPage = 1;
+let totalPages = 1;
 // Initialize the app
 document.addEventListener('DOMContentLoaded', async () => {
   showLoading();
-  await loadRandomSongs();
+  await fetchSongs(1);
   hideLoading();
   setupEventListeners();
 });
@@ -44,8 +47,10 @@ function setupEventListeners() {
 
   randomBtn.addEventListener('click', handleRandomSongs);
 
-  closeModal.addEventListener('click', () => {
-    songModal.classList.add('hidden');
+  window.addEventListener('click', (event) => {
+    if (event.target === songModal) {
+      songModal.classList.add('hidden');
+    }
   });
 
   window.addEventListener('click', (e) => {
@@ -53,18 +58,46 @@ function setupEventListeners() {
       songModal.classList.add('hidden');
     }
   });
+  document.getElementById('prevBtn').addEventListener('click', async () => {
+    if (currentPage > 1) {
+      await fetchSongs(currentPage - 1);
+    }
+  });
+
+  document.getElementById('nextBtn').addEventListener('click', async () => {
+    if (currentPage < totalPages) {
+      await fetchSongs(currentPage + 1);
+    }
+  });
 }
 
 // API functions
-async function fetchSongs() {
+function updatePaginationControls() {
+  document.getElementById(
+    'pageInfo'
+  ).textContent = `Page ${currentPage} of ${totalPages}`;
+
+  document.getElementById('prevBtn').disabled = currentPage === 1;
+  document.getElementById('nextBtn').disabled = currentPage === totalPages;
+}
+
+async function fetchSongs(page = 1) {
   try {
-    const response = await fetch('/api/songs');
+    const response = await fetch(`/api/songs?page=${page}`);
     if (!response.ok) throw new Error('Failed to fetch songs');
-    return await response.json();
+    const data = await response.json();
+    currentSongs = data.songs;
+    totalPages = data.totalPages;
+    currentPage = data.page;
+    displaySongs(currentSongs);
+    updatePaginationControls();
+    updateResultsInfo(`Page ${currentPage} of ${totalPages}`, data.total);
+    console.log('Songs API data:', data);
+    return data;
   } catch (error) {
     console.error('Error fetching songs:', error);
     showError('Failed to load songs. Please try again.');
-    return [];
+    return null;
   }
 }
 
@@ -79,24 +112,21 @@ async function fetchRandomSongs(count = 4) {
     return [];
   }
 }
-
 async function searchSongs(query) {
   try {
     const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
     if (!response.ok) throw new Error('Failed to search songs');
-    return await response.json();
+    const songs = await response.json();
+    return { songs: songs, total: songs.length };
   } catch (error) {
     console.error('Error searching songs:', error);
-    showError('Failed to search songs. Please try again.');
-    return [];
+    return { songs: [], total: 0 };
   }
 }
-// Handle search
 async function handleSearch() {
   const query = searchInput.value.trim();
 
   if (!query) {
-    // Just clear the search results, don't reload random songs
     currentSongs = [];
     displaySongs(currentSongs);
     updateResultsInfo('Random Songs', 0);
@@ -107,11 +137,14 @@ async function handleSearch() {
   const searchResults = await searchSongs(query);
   hideLoading();
 
-  currentSongs = searchResults;
+  // If backend returns same format: { songs, total }
+  currentSongs = searchResults.songs || [];
   displaySongs(currentSongs);
-  updateResultsInfo(`Search Results for "${query}"`, searchResults.length);
+  updateResultsInfo(
+    `Search Results for "${query}"`,
+    searchResults.total ?? currentSongs.length
+  );
 }
-
 // Handle random songs
 async function handleRandomSongs() {
   showLoading();
@@ -213,31 +246,54 @@ function createRandomSongCard(song) {
   return card;
 }
 function getChartTypeImage(type) {
-  return type === 'DX' ? '/image/dx.png' : '/image/std.png';
+  if (!type) return '/image/std.png';
+  const typeUpper = type.toUpperCase();
+  return typeUpper === 'DX' ? '/image/dx.png' : '/image/std.png';
 }
 
 function showSongDetail(song) {
   const charts = song.charts || [];
 
-  const chartsByDifficulty = charts.reduce((acc, chart) => {
-    if (!acc[chart.difficulty]) {
-      acc[chart.difficulty] = [];
+  const difficultyOrder = [
+    'BASIC',
+    'ADVANCED',
+    'EXPERT',
+    'MASTER',
+    'RE:MASTER',
+    'REMASTER',
+  ];
+  const sortedCharts = [...charts].sort((a, b) => {
+    const diffCompare =
+      difficultyOrder.indexOf(a.difficulty?.toUpperCase()) -
+      difficultyOrder.indexOf(b.difficulty?.toUpperCase());
+    if (diffCompare !== 0) return diffCompare;
+    // If same difficulty, sort STD before DX
+    return (a.type === 'DX' ? 1 : 0) - (b.type === 'DX' ? 1 : 0);
+  });
+
+  // Group by difficulty
+  const chartsByDifficulty = sortedCharts.reduce((acc, chart) => {
+    const diff = chart.difficulty?.toUpperCase() || 'UNKNOWN';
+    if (!acc[diff]) {
+      acc[diff] = [];
     }
-    acc[chart.difficulty].push(chart);
+    acc[diff].push(chart);
     return acc;
   }, {});
 
-  const chartsHtml = Object.entries(chartsByDifficulty)
-    .map(([difficulty, charts]) => {
+  const chartsHtml = difficultyOrder
+    .filter((diff) => chartsByDifficulty[diff])
+    .map((difficulty) => {
+      const charts = chartsByDifficulty[difficulty];
       const chartsList = charts
         .map(
           (chart) => `
                 <div class="chart-detail">
                     <img src="${getChartTypeImage(chart.type)}" alt="${
-            chart.type
-          }" class="chart-type-img">
-                    <span class="chart-difficulty">${chart.difficulty.toUpperCase()} ${
-            chart.level
+            chart.type || 'Standard'
+          }" class="chart-type-img" onerror="this.style.display='none'">
+                    <span class="chart-difficulty">${difficulty} ${
+            chart.level || 'N/A'
           }</span>
                 </div>
             `
@@ -246,7 +302,7 @@ function showSongDetail(song) {
 
       return `
                 <div class="difficulty-group">
-                    <h4 class="difficulty-title ${difficulty.toLowerCase()}">${difficulty.toUpperCase()}</h4>
+                    <h4 class="difficulty-title ${difficulty.toLowerCase()}">${difficulty}</h4>
                     ${chartsList}
                 </div>
             `;
@@ -440,6 +496,9 @@ const additionalStyles = `
   border-radius: 10px;}
 .chart-badge {
   border-radius: 0; 
+}
+  .hidden {
+  display: none !important;  /* removes it from the page completely */
 }
 `;
 const styleSheet = document.createElement('style');
